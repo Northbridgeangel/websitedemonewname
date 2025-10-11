@@ -73,7 +73,7 @@
               // 🔹 CARGAMOS EL FONDO HDR / EXR
               // ================================================================
               const rgbeLoader = new THREE.RGBELoader();
-              rgbeLoader.load('./environment.exr', (texture) => {
+              rgbeLoader.load('./environment.hdr', (texture) => {
                 texture.mapping = THREE.EquirectangularReflectionMapping;
                 scene.environment = texture;  // iluminación global
                 scene.background = texture;   // fondo visible
