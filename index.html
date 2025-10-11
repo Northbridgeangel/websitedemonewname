@@ -1,76 +1,131 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Escenario 3D – TFG</title>
-  <style>
-    body { margin: 0; overflow: hidden; background: #000; }
-  </style>
-</head>
-<body>
-  <script>
-    // Función para cargar scripts dinámicamente
-    function loadScript(src, callback) {
-      const script = document.createElement('script');
-      script.src = src;
-      script.onload = callback;
-      document.head.appendChild(script);
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Escenario 3D – TFG</title>
+    <style>
+      body { margin: 0; overflow: hidden; background: #000; }
+      #ui { position: absolute; top: 20px; left: 20px; z-index: 10; }
+      button {
+        margin: 5px;
+        padding: 8px 14px;
+        background: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
 
-    // Cargar Three.js
-    loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js', () => {
+  <body>
+    <div id="ui">
+      <button id="editar">Editar</button>
+      <button id="mover">Mover</button>
+      <button id="salir">Salir</button>
+    </div>
 
-      // Cargar GLTFLoader
-      loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/loaders/GLTFLoader.js', () => {
+    <script>
+      // 🔹 Función para cargar scripts dinámicamente
+      function loadScript(src, callback) {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = callback;
+        document.head.appendChild(script);
+      }
 
-        // Cargar OrbitControls
-        loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/controls/OrbitControls.js', () => {
+      // 🔹 Cargamos Three.js primero
+      loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js', () => {
 
-          // Escena
-          const scene = new THREE.Scene();
+        // 🔹 Cargamos GLTFLoader
+        loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/loaders/GLTFLoader.js', () => {
 
-          // Renderer
-          const renderer = new THREE.WebGLRenderer({ antialias: true });
-          renderer.setSize(window.innerWidth, window.innerHeight);
-          document.body.appendChild(renderer.domElement);
+          // 🔹 Cargamos OrbitControls
+          loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/controls/OrbitControls.js', () => {
 
-          // Controles para mover la cámara (opcional)
-          const controls = new THREE.OrbitControls(undefined, renderer.domElement);
+            // 🔹 Cargamos RGBELoader (para fondos .exr)
+            loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/loaders/RGBELoader.js', () => {
 
-          // Cargar GLB completo
-          const loader = new THREE.GLTFLoader();
-          loader.load(
-            './escenario.glb',
-            (gltf) => {
-              scene.add(gltf.scene); // Añade toda la escena tal cual desde Blender
-              console.log('Escena GLB cargada correctamente ✅');
-              
-              // Si el GLB incluye cámara, la usamos automáticamente
-              const cameras = gltf.cameras;
-              if(cameras && cameras.length > 0) {
-                controls.object = cameras[0]; // OrbitControls apunta a la cámara del GLB
+              // ================================================================
+              // 🔹 CONFIGURACIÓN DE LA ESCENA
+              // ================================================================
+              const scene = new THREE.Scene();
+
+              const camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+              );
+              camera.position.set(0, 2, 5);
+
+              const renderer = new THREE.WebGLRenderer({ antialias: true });
+              renderer.setSize(window.innerWidth, window.innerHeight);
+              renderer.outputEncoding = THREE.sRGBEncoding;
+              renderer.toneMapping = THREE.ACESFilmicToneMapping;
+              renderer.toneMappingExposure = 1.0;
+              document.body.appendChild(renderer.domElement);
+
+              const controls = new THREE.OrbitControls(camera, renderer.domElement);
+              controls.enableDamping = true;
+
+              // ================================================================
+              // 🔹 CARGAMOS EL FONDO HDR / EXR
+              // ================================================================
+              const rgbeLoader = new THREE.RGBELoader();
+              rgbeLoader.load('./environment.exr', (texture) => {
+                texture.mapping = THREE.EquirectangularReflectionMapping;
+                scene.environment = texture;  // iluminación global
+                scene.background = texture;   // fondo visible
+
+                console.log('✅ Fondo EXR cargado correctamente');
+
+                // ================================================================
+                // 🔹 AHORA CARGAMOS EL MODELO GLB
+                // ================================================================
+                const loader = new THREE.GLTFLoader();
+                loader.load(
+                  './escenario.glb',
+                  (gltf) => {
+                    const model = gltf.scene;
+                    scene.add(model);
+                    console.log('✅ Modelo GLB cargado correctamente');
+
+                    animate();
+                  },
+                  undefined,
+                  (error) => console.error('❌ Error al cargar el GLB:', error)
+                );
+              });
+
+              // ================================================================
+              // 🔹 FUNCIONES DE RENDERIZADO
+              // ================================================================
+              function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
               }
-            },
-            undefined,
-            (error) => console.error('Error al cargar GLB ❌', error)
-          );
 
-          // Ajuste de tamaño al cambiar la ventana
-          window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
+              window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+              });
+
+              // ================================================================
+              // 🔹 INTERFAZ DE USUARIO (BOTONES)
+              // ================================================================
+              document.getElementById('editar').onclick = () =>
+                alert('Entrando en modo edición...');
+              document.getElementById('mover').onclick = () =>
+                alert('Modo mover activado');
+              document.getElementById('salir').onclick = () =>
+                alert('Saliendo de la interfaz');
+            });
           });
-
-          // Animación
-          const animate = () => {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, scene.children.find(c => c.isCamera) || scene, scene);
-          };
-          animate();
         });
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
