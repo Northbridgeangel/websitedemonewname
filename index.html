@@ -6,17 +6,9 @@
   <title>Escenario 3D – TFG</title>
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
-    #ui { position: absolute; top: 20px; left: 20px; z-index: 10; }
-    button { margin: 5px; padding: 8px 14px; background: #fff; border: none; border-radius: 6px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <div id="ui">
-    <button id="editar">Editar</button>
-    <button id="mover">Mover</button>
-    <button id="salir">Salir</button>
-  </div>
-
   <script>
     // Función para cargar scripts dinámicamente
     function loadScript(src, callback) {
@@ -26,83 +18,59 @@
       document.head.appendChild(script);
     }
 
-    // Cargamos Three.js primero
+    // Cargar Three.js
     loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js', () => {
 
-      // Cargamos GLTFLoader
+      // Cargar GLTFLoader
       loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/loaders/GLTFLoader.js', () => {
 
-        // Cargamos OrbitControls
+        // Cargar OrbitControls
         loadScript('https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/controls/OrbitControls.js', () => {
 
-          // ✅ Todo cargado, ahora ejecutamos nuestro código 3D
-
+          // Escena
           const scene = new THREE.Scene();
-          //scene.background = new THREE.Color(0x000000);
 
-          const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-          camera.position.set(0, 2, 5);
-
+          // Renderer
           const renderer = new THREE.WebGLRenderer({ antialias: true });
           renderer.setSize(window.innerWidth, window.innerHeight);
           document.body.appendChild(renderer.domElement);
 
-          // Luz
-          const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-          scene.add(ambient);
-          const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-          dirLight.position.set(3, 5, 2);
-          scene.add(dirLight);
+          // Controles para mover la cámara (opcional)
+          const controls = new THREE.OrbitControls(undefined, renderer.domElement);
 
-          // Controles orbitales
-          const controls = new THREE.OrbitControls(camera, renderer.domElement);
-
-          // Cargar modelo GLB
+          // Cargar GLB completo
           const loader = new THREE.GLTFLoader();
           loader.load(
             './escenario.glb',
             (gltf) => {
-              const model = gltf.scene;
-              model.scale.set(1, 1, 1);
-              scene.add(model);
-              console.log('Modelo cargado correctamente ✅');
+              scene.add(gltf.scene); // Añade toda la escena tal cual desde Blender
+              console.log('Escena GLB cargada correctamente ✅');
+              
+              // Si el GLB incluye cámara, la usamos automáticamente
+              const cameras = gltf.cameras;
+              if(cameras && cameras.length > 0) {
+                controls.object = cameras[0]; // OrbitControls apunta a la cámara del GLB
+              }
             },
             undefined,
-            (error) => {
-              console.error('Error al cargar el modelo ❌', error);
-            }
+            (error) => console.error('Error al cargar GLB ❌', error)
           );
 
-          // Cubo de prueba
-          const cube = new THREE.Mesh(
-            new THREE.BoxGeometry(1, 1, 1),
-            new THREE.MeshStandardMaterial({ color: 0x00ff00 })
-          );
-          scene.add(cube);
-
-          // Ajuste del viewport
+          // Ajuste de tamaño al cambiar la ventana
           window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
           });
 
           // Animación
-          function animate() {
+          const animate = () => {
             requestAnimationFrame(animate);
             controls.update();
-            renderer.render(scene, camera);
-          }
+            renderer.render(scene, scene.children.find(c => c.isCamera) || scene, scene);
+          };
           animate();
-
-          // Botones UI
-          document.getElementById('editar').onclick = () => alert('Entrando en modo edición...');
-          document.getElementById('mover').onclick = () => alert('Modo mover activado');
-          document.getElementById('salir').onclick = () => alert('Saliendo de la interfaz');
-
-        }); // Fin OrbitControls
-      }); // Fin GLTFLoader
-    }); // Fin Three.js
+        });
+      });
+    });
   </script>
 </body>
 </html>
