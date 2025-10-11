@@ -1,281 +1,93 @@
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>TFG - lienzo pintable en mesh</title>
-<style>
-  body { margin:0; overflow:hidden; font-family: sans-serif; }
-  #ui { position:absolute; left:10px; top:10px; z-index:10; background: rgba(255,255,255,0.9); padding:8px; border-radius:6px;}
-  #paintUI { display:none; margin-top:8px; }
-  canvas#paintPreview { border:1px solid #222; display:block; margin-top:8px; }
-  button { margin:4px 2px; }
-</style>
-</head>
-<body>
-  <div id="ui">
-    <button id="editBtn">Editar</button>
-    <button id="moveBtn">Mover</button>
-    <button id="exitBtn">Salir</button>
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Escenario 3D – TFG</title>
+    <style>
+      body { margin: 0; overflow: hidden; background: #000; }
+      #ui { position: absolute; top: 20px; left: 20px; z-index: 10; }
+      button { margin: 5px; padding: 8px 14px; background: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    </style>
+  </head>
 
-    <div id="paintUI">
-      <div>Mini Paint</div>
-      <input type="color" id="colorPicker" value="#000000">
-      <input type="range" id="brushSize" min="1" max="80" value="8">
-      <button id="eraseBtn">Borrar</button>
-      <button id="clearBtn">Limpiar lienzo</button>
-      <canvas id="paintPreview" width="256" height="256"></canvas>
+  <body>
+    <div id="ui">
+      <button id="editar">Editar</button>
+      <button id="mover">Mover</button>
+      <button id="salir">Salir</button>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/examples/js/controls/TransformControls.js"></script>
+    <!-- ✅ Ahora todo va dentro de un módulo moderno -->
+    <script type="module">
+      // Importamos los módulos directamente desde el CDN oficial
+      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js';
+      import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/loaders/GLTFLoader.js';
+      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.157.0/examples/jsm/controls/OrbitControls.js';
 
-  <script>
-  // --- escena básica ---
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1000);
-  camera.position.set(0,2,5);
+      // 🔹 Escena, cámara, renderer
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
 
-  const renderer = new THREE.WebGLRenderer({antialias:true});
-  renderer.setSize(innerWidth, innerHeight);
-  document.body.appendChild(renderer.domElement);
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      camera.position.set(0, 2, 5);
 
-  const orbit = new THREE.OrbitControls(camera, renderer.domElement);
-  orbit.enableDamping = true;
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
 
-  const light = new THREE.DirectionalLight(0xffffff, 1);
-  light.position.set(3,6,2);
-  scene.add(light);
-  scene.add(new THREE.AmbientLight(0x666666));
+      // 🔹 Luz ambiental + direccional
+      const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+      scene.add(ambient);
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(3, 5, 2);
+      scene.add(dirLight);
 
-  // --- cargar GLB ---
-  const loader = new THREE.GLTFLoader();
-  let meshLienzo = null;
-  let originalMaterial = null;
+      // 🔹 Controles orbitales
+      const controls = new OrbitControls(camera, renderer.domElement);
 
-  loader.load('escenario.glb', gltf => {
-    scene.add(gltf.scene);
+      // 🔹 Cargamos el modelo GLB
+      const loader = new GLTFLoader();
+      loader.load(
+        './escenario.glb',
+        (gltf) => {
+          const model = gltf.scene;
+          model.scale.set(1, 1, 1);
+          scene.add(model);
+          console.log('Modelo cargado correctamente ✅');
+        },
+        undefined,
+        (error) => {
+          console.error('Error al cargar el modelo ❌', error);
+        }
+      );
 
-    // Buscar mesh que incluya 'lienzo' en su nombre (case-insensitive)
-    gltf.scene.traverse(child => {
-      if (child.isMesh && /lienzo/i.test(child.name)) {
-        meshLienzo = child;
+      // 🔹 Cubo de prueba (para confirmar render)
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshStandardMaterial({ color: 0x00ff00 })
+      );
+      scene.add(cube);
+
+      // 🔹 Ajuste del viewport al cambiar tamaño
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // 🔹 Animación
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
       }
-    });
+      animate();
 
-    if (!meshLienzo) {
-      // fallback: si no hay mesh llamado lienzo, crea un plane demo
-      console.warn("No se encontró mesh llamado 'lienzo' en el GLB. Se creará un plano de prueba.");
-      meshLienzo = new THREE.Mesh(new THREE.PlaneGeometry(2,2), new THREE.MeshBasicMaterial({color:0xffffff}));
-      meshLienzo.position.set(0,1,0);
-      scene.add(meshLienzo);
-    }
-
-    // Guarda material original
-    originalMaterial = meshLienzo.material;
-
-    // Prepara lienzo pintable
-    setupCanvasForMesh(meshLienzo);
-  });
-
-  // --- canvas 2D que será textura ---
-  const paintPreview = document.getElementById('paintPreview');
-  const ctxPreview = paintPreview.getContext('2d');
-  const CANVAS_SIZE = 1024; // ajustar para más resolución
-  const paintCanvas = document.createElement('canvas');
-  paintCanvas.width = CANVAS_SIZE;
-  paintCanvas.height = CANVAS_SIZE;
-  const ctx = paintCanvas.getContext('2d');
-
-  // Inicializar fondo blanco (o lo que quieras)
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0, CANVAS_SIZE, CANVAS_SIZE);
-  // sin bordes - para preview menor
-  ctxPreview.drawImage(paintCanvas, 0,0, paintPreview.width, paintPreview.height);
-
-  let paintTexture = new THREE.CanvasTexture(paintCanvas);
-  paintTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
-  function setupCanvasForMesh(mesh) {
-    // Reemplazar material por uno que use la textura del canvas
-    const newMat = new THREE.MeshBasicMaterial({
-      map: paintTexture,
-      side: THREE.DoubleSide,
-      transparent: true
-    });
-    mesh.material = newMat;
-    mesh.material.needsUpdate = true;
-  }
-
-  // --- raycasting para pintar vía UV ---
-  const raycaster = new THREE.Raycaster();
-  const pointer = new THREE.Vector2();
-  let painting = false;
-  let lastUv = null;
-  let isErase = false;
-
-  const colorPicker = document.getElementById('colorPicker');
-  const brushSize = document.getElementById('brushSize');
-
-  // eventos del ratón/táctil
-  renderer.domElement.addEventListener('pointerdown', onPointerDown);
-  renderer.domElement.addEventListener('pointermove', onPointerMove);
-  window.addEventListener('pointerup', onPointerUp);
-
-  function getPointerNormalized(event) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    return {
-      x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      y: -((event.clientY - rect.top) / rect.height) * 2 + 1
-    };
-  }
-
-  function onPointerDown(e){
-    if (!meshLienzo) return;
-    const p = getPointerNormalized(e);
-    pointer.set(p.x, p.y);
-    raycaster.setFromCamera(pointer, camera);
-    const intersects = raycaster.intersectObject(meshLienzo, true);
-    if (intersects.length>0) {
-      const uv = intersects[0].uv;
-      if (uv) {
-        painting = true;
-        lastUv = uv.clone();
-        drawAtUV(uv);
-      }
-    }
-  }
-
-  function onPointerMove(e){
-    if (!painting || !meshLienzo) return;
-    const p = getPointerNormalized(e);
-    pointer.set(p.x, p.y);
-    raycaster.setFromCamera(pointer, camera);
-    const intersects = raycaster.intersectObject(meshLienzo, true);
-    if (intersects.length>0 && intersects[0].uv) {
-      const uv = intersects[0].uv;
-      strokeUV(lastUv, uv);
-      lastUv.copy(uv);
-    }
-  }
-
-  function onPointerUp(e){
-    if (painting) {
-      painting = false;
-      lastUv = null;
-    }
-  }
-
-  // DIBUJOS en el canvas (UV->px)
-  function uvToPixel(uv){
-    // uv.x en [0,1], uv.y en [0,1]; invertir y
-    const x = Math.round(uv.x * CANVAS_SIZE);
-    const y = Math.round((1 - uv.y) * CANVAS_SIZE);
-    return { x, y };
-  }
-
-  function drawAtUV(uv){
-    const p = uvToPixel(uv);
-    const size = parseInt(brushSize.value, 10);
-    if (isErase) {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, size, 0, Math.PI*2);
-      ctx.fill();
-      ctx.globalCompositeOperation = 'source-over';
-    } else {
-      ctx.fillStyle = colorPicker.value;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, size, 0, Math.PI*2);
-      ctx.fill();
-    }
-    paintTexture.needsUpdate = true;
-    ctxPreview.drawImage(paintCanvas, 0,0, paintPreview.width, paintPreview.height);
-  }
-
-  function strokeUV(prevUv, currentUv){
-    // interpolar entre puntos para líneas más suaves
-    const p0 = uvToPixel(prevUv), p1 = uvToPixel(currentUv);
-    ctx.lineJoin = ctx.lineCap = 'round';
-    ctx.lineWidth = parseInt(brushSize.value,10) * 2;
-    if (isErase){
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.moveTo(p0.x, p0.y);
-      ctx.lineTo(p1.x, p1.y);
-      ctx.stroke();
-      ctx.globalCompositeOperation = 'source-over';
-    } else {
-      ctx.strokeStyle = colorPicker.value;
-      ctx.beginPath();
-      ctx.moveTo(p0.x, p0.y);
-      ctx.lineTo(p1.x, p1.y);
-      ctx.stroke();
-    }
-    paintTexture.needsUpdate = true;
-    ctxPreview.drawImage(paintCanvas, 0,0, paintPreview.width, paintPreview.height);
-  }
-
-  // UI botones
-  document.getElementById('editBtn').addEventListener('click', ()=> {
-    document.getElementById('paintUI').style.display = 'block';
-    // desactivar orbit (si quieres) para que el usuario no mueva la cámara al pintar
-    orbit.enabled = true; // puedes decidir false para bloquear cámara
-  });
-  document.getElementById('exitBtn').addEventListener('click', ()=> {
-    document.getElementById('paintUI').style.display = 'none';
-    orbit.enabled = true;
-  });
-
-  document.getElementById('eraseBtn').addEventListener('click', ()=> {
-    isErase = !isErase;
-    document.getElementById('eraseBtn').textContent = isErase ? 'Modo Borrar (ON)' : 'Borrar';
-  });
-
-  document.getElementById('clearBtn').addEventListener('click', ()=> {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0,0,CANVAS_SIZE, CANVAS_SIZE);
-    paintTexture.needsUpdate = true;
-    ctxPreview.drawImage(paintCanvas, 0,0, paintPreview.width, paintPreview.height);
-  });
-
-  // --- TransformControls para mover el mesh (modo 'move') ---
-  const transformControl = new THREE.TransformControls(camera, renderer.domElement);
-  scene.add(transformControl);
-  let moveMode = false;
-  document.getElementById('moveBtn').addEventListener('click', ()=> {
-    moveMode = !moveMode;
-    if (moveMode && meshLienzo) {
-      transformControl.attach(meshLienzo);
-      transformControl.setMode('translate'); // translate/rotate/scale
-      orbit.enabled = false;
-    } else {
-      transformControl.detach();
-      orbit.enabled = true;
-    }
-  });
-
-  // evitar conflicto entre orbit y transform controls
-  transformControl.addEventListener('mouseDown', ()=> orbit.enabled = false);
-  transformControl.addEventListener('mouseUp', ()=> orbit.enabled = true);
-
-  // --- render loop ---
-  function animate(){
-    requestAnimationFrame(animate);
-    orbit.update();
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  // Ajustar al redimensionar
-  window.addEventListener('resize', ()=>{
-    camera.aspect = innerWidth/innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  });
-
-  </script>
-</body>
+      // 🔹 Botones de UI
+      document.getElementById('editar').onclick = () => alert('Entrando en modo edición...');
+      document.getElementById('mover').onclick = () => alert('Modo mover activado');
+      document.getElementById('salir').onclick = () => alert('Saliendo de la interfaz');
+    </script>
+  </body>
 </html>
