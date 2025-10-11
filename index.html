@@ -18,13 +18,13 @@
       <button id="salir">Salir</button>
     </div>
 
-    <!-- ✅ Ahora todo va dentro de un módulo moderno -->
-    <script type="module">
-      // Importamos los módulos directamente desde el CDN oficial
-      import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js';
-      import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/loaders/GLTFLoader.js';
-      import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/controls/OrbitControls.js';
+    <!-- Scripts que sirven las librerías como variables globales -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.163.0/examples/js/controls/OrbitControls.js"></script>
 
+    <!-- Script principal -->
+    <script>
       // 🔹 Escena, cámara, renderer
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x000000);
@@ -44,10 +44,10 @@
       scene.add(dirLight);
 
       // 🔹 Controles orbitales
-      const controls = new OrbitControls(camera, renderer.domElement);
+      const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
       // 🔹 Cargamos el modelo GLB
-      const loader = new GLTFLoader();
+      const loader = new THREE.GLTFLoader();
       loader.load(
         './escenario.glb',
         (gltf) => {
@@ -62,7 +62,7 @@
         }
       );
 
-      // 🔹 Cubo de prueba (para confirmar render)
+      // 🔹 Cubo de prueba
       const cube = new THREE.Mesh(
         new THREE.BoxGeometry(1, 1, 1),
         new THREE.MeshStandardMaterial({ color: 0x00ff00 })
@@ -91,3 +91,4 @@
     </script>
   </body>
 </html>
+
