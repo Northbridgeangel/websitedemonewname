@@ -46,5 +46,8 @@ Significa que A-Frame todavía usa internamente useLegacyLights = true.
 No afecta la escena usando luces básicas (<a-light>), pero si usamos PBR o GLB con materiales estándar, conviene revisar la iluminación según la guía de Three.js r155+.
 
 
+Nota del funcionamiento: Ignorar los warnings de framebuffer si la escena se ve correcta; si notas errores gráficos, revisar tamaños de canvas y skybox.
 
-Nota: Ignorar los warnings de framebuffer si la escena se ve correcta; si notas errores gráficos, revisar tamaños de canvas y skybox.
+Aviso de copyright:
+© 2025 Cristina Guerrero Domingo. Todos los derechos reservados.
+Consulte el archivo LICENSE para conocer los términos de uso.
