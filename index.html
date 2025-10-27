@@ -10,11 +10,13 @@
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
     <!-- Componentes custom -->
+     <script type="module" src="./js/Main.js"></script>
     <script src="./js/components/clickable.js"></script>
     <script src="./js/components/scroll-fly-smooth.js"></script>
     <script src="./js/components/smooth-wasd.js"></script>
     <script src="./js/components/mirrormaterial.js"></script>
-    <script type="module" src="./js/main.js"></script>
+    <script src="./js/components/DetectorClickHover.js"></script>
+    <script src="./js/components/Embellecedor.js"></script>
 </head>
 
 <body>
@@ -32,7 +34,7 @@
             position="0 1.6 0">
         </a-entity>
 
-        <!-- GLB cargado -->
+        <!-- GLB cargado como escenario estático -->
         <a-entity id="escenario" gltf-model="./assets/escenario.glb" mirror-material="target: #escenario"></a-entity>
 
     </a-scene>
